@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Style C: Clean Cloud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #F5F7FA;
+    color: #1A2035;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .slide {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Top header bar */
+  .top-bar {
+    height: 4px;
+    background: linear-gradient(90deg, #0062FF 0%, #00C6CF 60%, #00E5B0 100%);
+    flex-shrink: 0;
+  }
+
+  /* Nav strip */
+  .nav-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(0.75rem, 2vw, 1.25rem) clamp(2rem, 5vw, 5rem);
+    border-bottom: 1px solid #E2E6F0;
+    flex-shrink: 0;
+    background: #FFFFFF;
+  }
+
+  .logo {
+    font-size: clamp(0.7rem, 1vw, 0.85rem);
+    font-weight: 700;
+    color: #0062FF;
+    letter-spacing: 0.05em;
+  }
+
+  .nav-label {
+    font-size: clamp(0.55rem, 0.75vw, 0.65rem);
+    color: #8A92A8;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* Main content area */
+  .main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: clamp(2rem, 5vw, 5rem);
+    gap: clamp(2rem, 5vw, 6rem);
+    position: relative;
+  }
+
+  /* Background orb */
+  .main::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 500px; height: 500px;
+    background: radial-gradient(ellipse, rgba(0, 98, 255, 0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .text-block {
+    flex: 1;
+    max-width: 580px;
+  }
+
+  .pill {
+    display: inline-block;
+    background: #EEF3FF;
+    color: #0062FF;
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.35rem 1rem;
+    border-radius: 100px;
+    margin-bottom: clamp(1rem, 2vw, 1.5rem);
+    opacity: 0;
+    animation: fade-in 0.6s ease 0.2s forwards;
+  }
+
+  h1 {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: #0D1630;
+    margin-bottom: clamp(1rem, 2vw, 1.5rem);
+    opacity: 0;
+    animation: fade-up 0.7s cubic-bezier(0.16,1,0.3,1) 0.35s forwards;
+  }
+
+  h1 mark {
+    background: none;
+    color: #0062FF;
+  }
+
+  .description {
+    font-size: clamp(0.85rem, 1.2vw, 1rem);
+    font-weight: 400;
+    line-height: 1.7;
+    color: #4E5875;
+    margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
+    opacity: 0;
+    animation: fade-up 0.7s cubic-bezier(0.16,1,0.3,1) 0.5s forwards;
+  }
+
+  .info-row {
+    display: flex;
+    gap: clamp(1.5rem, 3vw, 3rem);
+    opacity: 0;
+    animation: fade-up 0.7s cubic-bezier(0.16,1,0.3,1) 0.65s forwards;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .info-label {
+    font-size: clamp(0.55rem, 0.75vw, 0.65rem);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #9BA3B8;
+  }
+
+  .info-value {
+    font-size: clamp(0.75rem, 1vw, 0.875rem);
+    font-weight: 500;
+    color: #1A2035;
+  }
+
+  /* Right visual block */
+  .visual-block {
+    width: clamp(200px, 30vw, 340px);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.6rem, 1vw, 1rem);
+    opacity: 0;
+    animation: fade-up 0.8s cubic-bezier(0.16,1,0.3,1) 0.7s forwards;
+  }
+
+  .card {
+    background: #FFFFFF;
+    border: 1px solid #E2E6F0;
+    border-radius: 10px;
+    padding: clamp(0.75rem, 1.5vw, 1.25rem) clamp(1rem, 2vw, 1.5rem);
+    display: flex;
+    align-items: center;
+    gap: clamp(0.6rem, 1vw, 1rem);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+
+  .card-icon {
+    width: clamp(32px, 4vw, 44px);
+    height: clamp(32px, 4vw, 44px);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(1rem, 1.5vw, 1.4rem);
+    flex-shrink: 0;
+  }
+
+  .card-icon.blue { background: #EEF3FF; }
+  .card-icon.teal { background: #E6FAF8; }
+  .card-icon.amber { background: #FFF8EC; }
+
+  .card-text .card-title {
+    font-size: clamp(0.7rem, 0.9vw, 0.82rem);
+    font-weight: 600;
+    color: #1A2035;
+  }
+
+  .card-text .card-desc {
+    font-size: clamp(0.6rem, 0.75vw, 0.7rem);
+    color: #8A92A8;
+    margin-top: 0.1rem;
+  }
+
+  /* Bottom footer */
+  .footer {
+    padding: clamp(0.75rem, 1.5vw, 1rem) clamp(2rem, 5vw, 5rem);
+    border-top: 1px solid #E2E6F0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    background: #FFFFFF;
+  }
+
+  .footer-left {
+    font-size: clamp(0.55rem, 0.75vw, 0.65rem);
+    color: #C0C6D8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .style-badge {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: #C0C6D8;
+    text-transform: uppercase;
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+  <div class="slide">
+    <div class="top-bar"></div>
+
+    <div class="nav-strip">
+      <div class="logo">DSAI CAPSTONE</div>
+      <div class="nav-label">Proof of Concept · 2025</div>
+    </div>
+
+    <div class="main">
+      <div class="text-block">
+        <div class="pill">Governance-Aware · AWS RAG · IMDA Aligned</div>
+        <h1>AI-Assisted <mark>PFI Reporting</mark><br>for Competent Person<br>Workflows</h1>
+        <p class="description">A cloud-based RAG assistant to streamline draft report generation — reducing manual effort, improving consistency, preserving professional accountability.</p>
+        <div class="info-row">
+          <div class="info-item">
+            <span class="info-label">Platform</span>
+            <span class="info-value">AWS Bedrock</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Scope</span>
+            <span class="info-value">Proof of Concept</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Standard</span>
+            <span class="info-value">IMDA MGF</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="visual-block">
+        <div class="card">
+          <div class="card-icon blue">📄</div>
+          <div class="card-text">
+            <div class="card-title">Inspection Data Ingestion</div>
+            <div class="card-desc">PDF · Images · Structured Data</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon teal">🔍</div>
+          <div class="card-text">
+            <div class="card-title">Knowledge Retrieval</div>
+            <div class="card-desc">RAG · Semantic Search · Multi-Hop</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon amber">✅</div>
+          <div class="card-text">
+            <div class="card-title">Draft Report Generation</div>
+            <div class="card-desc">CP Reviews · BCA Aligned · Human Oversight</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="footer-left">Competent Person Report Assistant · AWS Cloud</div>
+      <div class="style-badge">Style C — Clean Cloud</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,2399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Assisted PFI Reporting — DSAI Capstone POC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+/* ===== CSS CUSTOM PROPERTIES ===== */
+:root {
+  --bg: #0B1426;
+  --bg-card: #0F1A30;
+  --bg-subtle: #112040;
+  --border: rgba(30, 136, 229, 0.15);
+  --border-active: rgba(30, 136, 229, 0.4);
+  --accent: #1E88E5;
+  --accent-cyan: #00E5FF;
+  --text-primary: #FFFFFF;
+  --text-secondary: #7FA8D8;
+  --text-dim: #3D6B99;
+  --text-muted: #4D6E99;
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+/* ===== RESET & BASE ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  font-size: 20px;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  background-image:
+    linear-gradient(rgba(30, 136, 229, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 136, 229, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: -20%;
+  right: -10%;
+  width: 60vw;
+  height: 60vh;
+  background: radial-gradient(ellipse at center, rgba(0, 229, 255, 0.06) 0%, rgba(30, 136, 229, 0.04) 35%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-cyan));
+  width: 0%;
+  z-index: 1000;
+  transition: width 0.4s ease;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+/* ===== NAVIGATION DOTS ===== */
+.nav-dots {
+  position: fixed;
+  right: clamp(0.75rem, 2vw, 1.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 999;
+}
+
+.nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  padding: 0;
+}
+
+.nav-dot.active {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 6px rgba(0, 229, 255, 0.6);
+  transform: scale(1.4);
+}
+
+.nav-dot:hover {
+  background: var(--accent);
+}
+
+/* ===== SLIDE BASE ===== */
+.slide {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  scroll-snap-align: start;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(1.5rem, 3vw, 3rem) clamp(1.5rem, 4vw, 4rem);
+  z-index: 1;
+}
+
+/* ===== SLIDE COUNTER ===== */
+.slide-counter {
+  position: absolute;
+  bottom: clamp(1rem, 2vh, 1.5rem);
+  right: clamp(1.5rem, 3vw, 3rem);
+  font-family: var(--font-mono);
+  font-size: clamp(0.9rem, 1.5vw, 1.12rem);
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+
+/* ===== REVEAL ANIMATIONS ===== */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal:nth-child(1) { transition-delay: 0.05s; }
+.reveal:nth-child(2) { transition-delay: 0.15s; }
+.reveal:nth-child(3) { transition-delay: 0.25s; }
+.reveal:nth-child(4) { transition-delay: 0.35s; }
+.reveal:nth-child(5) { transition-delay: 0.45s; }
+.reveal:nth-child(6) { transition-delay: 0.55s; }
+.reveal:nth-child(7) { transition-delay: 0.65s; }
+.reveal:nth-child(8) { transition-delay: 0.75s; }
+.reveal:nth-child(9) { transition-delay: 0.85s; }
+
+/* ===== COMMON ELEMENTS ===== */
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: clamp(0.9rem, 1.5vw, 1.12rem);
+  color: var(--accent-cyan);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.slide-title {
+  font-size: clamp(1.1rem, 2.2vw, 1.75rem);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: clamp(0.75rem, 1.5vh, 1.25rem);
+  line-height: 1.2;
+}
+
+.slide-title span {
+  color: var(--accent-cyan);
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+
+.card:hover {
+  border-color: var(--border-active);
+  transition: border-color 0.3s ease;
+}
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  margin: clamp(0.5rem, 1vh, 1rem) 0;
+}
+
+/* ===== SLIDE 1: TITLE ===== */
+#slide-1 {
+  justify-content: center;
+  padding-left: clamp(2.5rem, 6vw, 6rem);
+}
+
+.title-accent-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, transparent, var(--accent-cyan), var(--accent), transparent);
+}
+
+.title-slide-content {
+  max-width: 70%;
+  position: relative;
+  z-index: 2;
+}
+
+.title-slide-content h1 {
+  font-size: clamp(2rem, 4.5vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  margin: clamp(0.5rem, 1.5vh, 1rem) 0;
+  background: linear-gradient(135deg, #fff 60%, var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.title-slide-content h2 {
+  font-size: clamp(1.02rem, 1.92vw, 1.38rem);
+  font-weight: 400;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: clamp(1rem, 2vh, 1.5rem);
+}
+
+.team-row {
+  font-family: var(--font-mono);
+  font-size: clamp(0.94rem, 1.62vw, 1.15rem);
+  color: var(--text-secondary);
+  margin: clamp(0.5rem, 1vh, 0.75rem) 0;
+  letter-spacing: 0.05em;
+}
+
+.meta-pills {
+  display: flex;
+  gap: clamp(0.5rem, 1vw, 0.75rem);
+  flex-wrap: wrap;
+  margin-top: clamp(0.75rem, 1.5vh, 1rem);
+}
+
+.pill {
+  font-family: var(--font-mono);
+  font-size: clamp(0.9rem, 1.35vw, 1.08rem);
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 3px;
+  padding: 0.25rem 0.6rem;
+  letter-spacing: 0.08em;
+}
+
+/* ===== SLIDE 2: EXECUTIVE SUMMARY ===== */
+.exec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.6rem, 1.2vw, 1rem);
+  flex: 1;
+}
+
+.exec-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.75rem, 1.5vw, 1.25rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.exec-card-icon {
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  line-height: 1;
+}
+
+.exec-card-title {
+  font-size: clamp(1.01rem, 1.62vw, 1.22rem);
+  font-weight: 600;
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+.exec-card-text {
+  font-size: clamp(1.05rem, 1.65vw, 1.23rem);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.disclaimer {
+  font-family: var(--font-mono);
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: clamp(0.5rem, 1vh, 0.75rem);
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: rgba(30, 136, 229, 0.04);
+}
+
+/* ===== SLIDE 3: PFI OVERVIEW ===== */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(1rem, 2vw, 2rem);
+  flex: 1;
+  align-items: start;
+}
+
+.stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.6rem, 1.2vh, 1rem);
+}
+
+.stat-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.6rem, 1.2vw, 1rem) clamp(0.75rem, 1.5vw, 1.25rem);
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.stat-number {
+  font-family: var(--font-mono);
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  font-weight: 500;
+  color: var(--accent-cyan);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.stat-label {
+  font-size: clamp(0.98rem, 1.5vw, 1.17rem);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.fact-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1vh, 0.75rem);
+}
+
+.fact-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.5rem, 1vw, 0.85rem) clamp(0.75rem, 1.5vw, 1rem);
+  font-size: clamp(1.02rem, 1.58vw, 1.2rem);
+  color: var(--text-secondary);
+  line-height: 1.45;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.fact-item::before {
+  content: '—';
+  color: var(--accent);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.bottom-note {
+  font-family: var(--font-mono);
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--text-muted);
+  margin-top: clamp(0.5rem, 1vh, 0.75rem);
+  padding-left: 1rem;
+  border-left: 2px solid var(--accent);
+}
+
+/* ===== SLIDE 4: PAIN POINTS ===== */
+.pain-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1vh, 0.75rem);
+  flex: 1;
+}
+
+.pain-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.6rem, 1.2vw, 1rem) clamp(0.75rem, 1.5vw, 1.25rem);
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+
+.pain-number {
+  font-family: var(--font-mono);
+  font-size: clamp(1.01rem, 1.62vw, 1.22rem);
+  color: var(--accent);
+  font-weight: 500;
+  flex-shrink: 0;
+  min-width: 2.5rem;
+}
+
+.pain-content {}
+
+.pain-title {
+  font-family: var(--font-mono);
+  font-size: clamp(0.9rem, 1.42vw, 1.12rem);
+  color: var(--accent-cyan);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.25rem;
+}
+
+.pain-desc {
+  font-size: clamp(1.02rem, 1.58vw, 1.2rem);
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* ===== SLIDE 5: WORKFLOW ===== */
+.flow-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(0.5rem, 1vh, 0.75rem);
+}
+
+.flow-main-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+}
+
+.flow-step {
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: clamp(0.4rem, 0.8vw, 0.65rem) clamp(0.5rem, 1vw, 0.85rem);
+  font-size: clamp(0.9rem, 1.35vw, 1.12rem);
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  position: relative;
+  text-align: center;
+}
+
+.flow-step.dim {
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.flow-arrow {
+  color: var(--accent);
+  font-size: clamp(1.08rem, 1.62vw, 1.35rem);
+  padding: 0 clamp(0.2rem, 0.4vw, 0.35rem);
+  flex-shrink: 0;
+}
+
+.flow-arrow.dim {
+  color: var(--text-dim);
+}
+
+.decision-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.decision {
+  width: clamp(60px, 8vw, 80px);
+  height: clamp(60px, 8vw, 80px);
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  transform: rotate(45deg);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.decision-label {
+  transform: rotate(-45deg);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0.85rem, 1.27vw, 1.05rem);
+  text-align: center;
+  font-family: var(--font-mono);
+  color: var(--accent-cyan);
+  padding: 0.25rem;
+  line-height: 1.3;
+}
+
+.branch-container {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1vh, 0.75rem);
+  margin-left: clamp(0.5rem, 1vw, 0.75rem);
+}
+
+.branch-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.branch-label {
+  font-family: var(--font-mono);
+  font-size: clamp(0.94rem, 1.36vw, 1.1rem);
+  color: var(--accent-cyan);
+  margin-right: 0.4rem;
+  white-space: nowrap;
+}
+
+.branch-label.dim {
+  color: var(--text-dim);
+}
+
+.flow-note {
+  font-family: var(--font-mono);
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--text-muted);
+  padding-left: 1rem;
+  border-left: 2px solid var(--accent);
+  margin-top: clamp(0.25rem, 0.5vh, 0.5rem);
+}
+
+/* ===== SLIDE 6: ROLES ===== */
+.roles-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  flex: 1;
+}
+
+.role-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+
+.role-card-title {
+  font-family: var(--font-mono);
+  font-size: clamp(0.93rem, 1.42vw, 1.12rem);
+  color: var(--accent-cyan);
+  letter-spacing: 0.08em;
+  margin-bottom: clamp(0.4rem, 0.8vh, 0.65rem);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+}
+
+.role-bullet {
+  font-size: clamp(0.98rem, 1.5vw, 1.17rem);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding: 0.2rem 0;
+  padding-left: 0.9rem;
+  position: relative;
+}
+
+.role-bullet::before {
+  content: '·';
+  color: var(--accent);
+  position: absolute;
+  left: 0.25rem;
+}
+
+.roles-connector {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--text-muted);
+  margin-top: clamp(0.4rem, 0.8vh, 0.6rem);
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: rgba(30, 136, 229, 0.04);
+}
+
+.cp-card {
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+
+/* ===== SLIDE 7: CAPABILITIES ===== */
+.cap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(0.6rem, 1.2vw, 1rem);
+  flex: 1;
+}
+
+.cap-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.75rem, 1.5vw, 1.25rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cap-icon {
+  font-size: clamp(1.2rem, 2.16vw, 1.68rem);
+}
+
+.cap-title {
+  font-family: var(--font-mono);
+  font-size: clamp(0.93rem, 1.42vw, 1.12rem);
+  color: var(--accent-cyan);
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.cap-desc {
+  font-size: clamp(0.98rem, 1.5vw, 1.17rem);
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* ===== SLIDE 8: PIPELINE ===== */
+.pipeline-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(0.5rem, 1vh, 0.75rem);
+}
+
+.pipeline-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  justify-content: center;
+}
+
+.pipeline-step {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: clamp(0.5rem, 1vw, 0.75rem) clamp(0.4rem, 0.8vw, 0.65rem);
+  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.pipeline-icon {
+  font-size: clamp(1.2rem, 2.16vw, 1.68rem);
+}
+
+.pipeline-label {
+  font-size: clamp(0.9rem, 1.35vw, 1.08rem);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.pipeline-sub {
+  font-size: clamp(0.92rem, 1.36vw, 1.1rem);
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.pipeline-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--accent);
+  font-size: clamp(1.08rem, 1.62vw, 1.35rem);
+  padding: 0 clamp(0.15rem, 0.3vw, 0.25rem);
+  flex-shrink: 0;
+}
+
+/* ===== SLIDE 9: ARCHITECTURE ===== */
+.arch-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.4rem, 0.8vh, 0.65rem);
+  position: relative;
+}
+
+.arch-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.5rem, 1vw, 0.75rem);
+}
+
+.arch-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.5rem, 1vw, 0.85rem) clamp(0.6rem, 1.2vw, 1rem);
+}
+
+.arch-box.primary {
+  border-color: var(--accent);
+}
+
+.arch-box.secondary {
+  border-color: rgba(30, 136, 229, 0.3);
+}
+
+.arch-box-title {
+  font-family: var(--font-mono);
+  font-size: clamp(0.9rem, 1.35vw, 1.08rem);
+  color: var(--accent-cyan);
+  letter-spacing: 0.08em;
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+}
+
+.arch-box-role {
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 0.3rem;
+}
+
+.arch-bullet {
+  font-size: clamp(0.95rem, 1.39vw, 1.12rem);
+  color: var(--text-secondary);
+  line-height: 1.45;
+  padding-left: 0.75rem;
+  position: relative;
+}
+
+.arch-bullet::before {
+  content: '·';
+  color: var(--accent);
+  position: absolute;
+  left: 0.15rem;
+}
+
+.arch-arrow {
+  color: var(--accent);
+  font-size: clamp(1.08rem, 1.68vw, 1.32rem);
+  flex-shrink: 0;
+}
+
+.arch-arrow.vertical {
+  transform: rotate(90deg);
+}
+
+.aws-boundary {
+  border: 1px dashed rgba(30, 136, 229, 0.3);
+  border-radius: 8px;
+  padding: clamp(0.4rem, 0.8vh, 0.6rem) clamp(0.5rem, 1vw, 0.75rem);
+  position: relative;
+  flex: 1;
+}
+
+.aws-label {
+  position: absolute;
+  top: -0.5rem;
+  left: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: clamp(0.88rem, 1.27vw, 1.05rem);
+  color: var(--accent);
+  background: var(--bg);
+  padding: 0 0.3rem;
+  letter-spacing: 0.1em;
+}
+
+.aws-inner {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.3rem, 0.6vh, 0.5rem);
+}
+
+.aws-inner-row {
+  display: flex;
+  gap: clamp(0.4rem, 0.8vw, 0.65rem);
+  align-items: flex-start;
+}
+
+.user-box {
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 6px;
+  padding: clamp(0.4rem, 0.8vw, 0.65rem) clamp(0.6rem, 1.2vw, 1rem);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.user-box-icon { font-size: clamp(1.2rem, 1.92vw, 1.5rem); }
+.user-box-label {
+  font-family: var(--font-mono);
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--accent-cyan);
+  white-space: nowrap;
+}
+
+/* ===== SLIDE 10: GUARDRAILS ===== */
+.guardrail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  flex: 1;
+}
+
+.guardrail-col-title {
+  font-family: var(--font-mono);
+  font-size: clamp(0.98rem, 1.5vw, 1.17rem);
+  color: var(--accent-cyan);
+  letter-spacing: 0.1em;
+  margin-bottom: clamp(0.5rem, 1vh, 0.75rem);
+}
+
+.guardrail-category {
+  margin-bottom: clamp(0.5rem, 1vh, 0.75rem);
+}
+
+.guardrail-cat-label {
+  font-family: var(--font-mono);
+  font-size: clamp(0.95rem, 1.39vw, 1.12rem);
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  margin-bottom: 0.2rem;
+}
+
+.guardrail-cat-text {
+  font-size: clamp(0.95rem, 1.42vw, 1.12rem);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--border);
+}
+
+.guardrail-why-item {
+  font-size: clamp(0.95rem, 1.42vw, 1.12rem);
+  color: var(--text-secondary);
+  line-height: 1.45;
+  padding: 0.3rem 0;
+  padding-left: 1rem;
+  position: relative;
+  border-bottom: 1px solid rgba(30, 136, 229, 0.08);
+}
+
+.guardrail-why-item::before {
+  content: '→';
+  color: var(--accent);
+  position: absolute;
+  left: 0;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.guardrail-quote {
+  text-align: center;
+  font-style: italic;
+  font-size: clamp(0.98rem, 1.5vw, 1.17rem);
+  color: var(--text-secondary);
+  padding: clamp(0.4rem, 0.8vh, 0.65rem);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: rgba(30, 136, 229, 0.04);
+  margin-top: clamp(0.4rem, 0.8vh, 0.65rem);
+}
+
+/* ===== SLIDE 11: GOVERNANCE ===== */
+.gov-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.6rem, 1.2vw, 1rem);
+  flex: 1;
+}
+
+.gov-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+
+.gov-pillar-label {
+  font-family: var(--font-mono);
+  font-size: clamp(0.88rem, 1.27vw, 1.05rem);
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  margin-bottom: 0.2rem;
+}
+
+.gov-pillar-title {
+  font-size: clamp(1.02rem, 1.58vw, 1.23rem);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: clamp(0.4rem, 0.8vh, 0.6rem);
+  line-height: 1.3;
+}
+
+.gov-bullet {
+  font-size: clamp(0.93rem, 1.38vw, 1.09rem);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding: 0.2rem 0;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.gov-bullet::before {
+  content: '·';
+  color: var(--accent-cyan);
+  position: absolute;
+  left: 0.25rem;
+}
+
+.gov-footer {
+  font-family: var(--font-mono);
+  font-size: clamp(0.95rem, 1.39vw, 1.12rem);
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: clamp(0.4rem, 0.8vh, 0.6rem);
+}
+
+/* ===== SLIDE 12: RISK ===== */
+.risk-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.6rem, 1.2vw, 1rem);
+  margin-bottom: clamp(0.4rem, 0.8vh, 0.65rem);
+}
+
+.risk-section-title {
+  font-family: var(--font-mono);
+  font-size: clamp(0.9rem, 1.35vw, 1.08rem);
+  color: var(--accent-cyan);
+  letter-spacing: 0.1em;
+  margin-bottom: clamp(0.4rem, 0.8vh, 0.6rem);
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: clamp(0.94rem, 1.39vw, 1.1rem);
+  padding: 0.2rem 0.6rem;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+}
+
+.tag.blue {
+  background: rgba(30, 136, 229, 0.12);
+  border: 1px solid rgba(30, 136, 229, 0.3);
+  color: var(--accent-cyan);
+}
+
+.tag.cyan {
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  color: var(--accent-cyan);
+}
+
+.risk-table {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.risk-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(30, 136, 229, 0.06);
+}
+
+.risk-label {
+  font-size: clamp(0.9rem, 1.35vw, 1.08rem);
+  color: var(--text-secondary);
+}
+
+.risk-badge {
+  font-family: var(--font-mono);
+  font-size: clamp(0.88rem, 1.27vw, 1.05rem);
+  padding: 0.15rem 0.4rem;
+  border-radius: 2px;
+  text-align: center;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.risk-badge.low { background: rgba(0, 200, 100, 0.12); color: #00c864; border: 1px solid rgba(0, 200, 100, 0.25); }
+.risk-badge.medium { background: rgba(255, 180, 0, 0.1); color: #ffb400; border: 1px solid rgba(255, 180, 0, 0.25); }
+.risk-badge.high { background: rgba(0, 229, 255, 0.1); color: var(--accent-cyan); border: 1px solid rgba(0, 229, 255, 0.25); }
+.risk-badge.low-med { background: rgba(100, 220, 130, 0.1); color: #64dc82; border: 1px solid rgba(100, 220, 130, 0.25); }
+
+.adlc-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: clamp(0.4rem, 0.8vw, 0.65rem);
+}
+
+.adlc-box {
+  background: rgba(30, 136, 229, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: clamp(0.4rem, 0.8vw, 0.65rem);
+}
+
+.adlc-label {
+  font-family: var(--font-mono);
+  font-size: clamp(0.9rem, 1.35vw, 1.08rem);
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.25rem;
+}
+
+.adlc-item {
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.adlc-box.prod {
+  border-color: rgba(0, 229, 255, 0.2);
+}
+.adlc-box.prod .adlc-label {
+  color: var(--accent-cyan);
+}
+.adlc-box.prod .adlc-item {
+  color: var(--text-secondary);
+}
+
+/* ===== SLIDE 13: EVALUATION ===== */
+.eval-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  flex: 1;
+}
+
+.eval-col {}
+
+.eval-col-title {
+  font-family: var(--font-mono);
+  font-size: clamp(0.98rem, 1.5vw, 1.17rem);
+  color: var(--accent-cyan);
+  letter-spacing: 0.1em;
+  margin-bottom: clamp(0.5rem, 1vh, 0.75rem);
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.eval-item {
+  padding: clamp(0.3rem, 0.6vh, 0.5rem) 0;
+  border-bottom: 1px solid rgba(30, 136, 229, 0.06);
+}
+
+.eval-item-title {
+  font-size: clamp(0.98rem, 1.5vw, 1.17rem);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.15rem;
+}
+
+.eval-item-desc {
+  font-size: clamp(0.9rem, 1.35vw, 1.08rem);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.eval-tech {
+  font-family: var(--font-mono);
+  font-size: clamp(0.94rem, 1.36vw, 1.1rem);
+  color: var(--accent);
+  margin-top: clamp(0.4rem, 0.8vh, 0.6rem);
+  padding: 0.3rem 0.5rem;
+  background: rgba(30, 136, 229, 0.06);
+  border-radius: 3px;
+  border-left: 2px solid var(--accent);
+}
+
+.biz-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: clamp(0.4rem, 0.8vw, 0.65rem);
+  margin-top: clamp(0.4rem, 0.8vh, 0.65rem);
+}
+
+.biz-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.5rem, 1vw, 0.75rem);
+}
+
+.biz-title {
+  font-family: var(--font-mono);
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--accent-cyan);
+  margin-bottom: 0.2rem;
+}
+
+.biz-desc {
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* ===== SLIDE 14: TEAM ===== */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(0.6rem, 1.2vw, 1rem);
+  flex: 1;
+}
+
+.team-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.75rem, 1.5vw, 1.25rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.team-name {
+  font-size: clamp(1.15rem, 1.89vw, 1.35rem);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.team-role {
+  font-family: var(--font-mono);
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--accent-cyan);
+  letter-spacing: 0.08em;
+  margin-bottom: 0.2rem;
+}
+
+.team-desc {
+  font-size: clamp(0.93rem, 1.38vw, 1.09rem);
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.team-note {
+  font-family: var(--font-mono);
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: clamp(0.4rem, 0.8vh, 0.6rem);
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+/* ===== SLIDE 15: ROADMAP ===== */
+.roadmap-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(0.6rem, 1.2vw, 1rem);
+  margin-bottom: clamp(0.6rem, 1.2vh, 1rem);
+}
+
+.phase-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.65rem, 1.3vw, 1rem);
+  position: relative;
+}
+
+.phase-card::after {
+  content: '→';
+  position: absolute;
+  right: -0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  font-size: clamp(1.08rem, 1.62vw, 1.35rem);
+  z-index: 1;
+}
+
+.phase-card:last-child::after {
+  display: none;
+}
+
+.phase-num {
+  font-family: var(--font-mono);
+  font-size: clamp(0.88rem, 1.27vw, 1.05rem);
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  margin-bottom: 0.2rem;
+}
+
+.phase-title {
+  font-size: clamp(0.98rem, 1.5vw, 1.17rem);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: clamp(0.3rem, 0.6vh, 0.5rem);
+  line-height: 1.25;
+}
+
+.phase-bullet {
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  padding: 0.15rem 0;
+  padding-left: 0.75rem;
+  position: relative;
+}
+
+.phase-bullet::before {
+  content: '·';
+  color: var(--accent-cyan);
+  position: absolute;
+  left: 0.15rem;
+}
+
+.decision-gate {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(0.5rem, 1vw, 0.75rem);
+  margin-bottom: clamp(0.4rem, 0.8vh, 0.65rem);
+}
+
+.gate-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.5rem, 1vw, 0.75rem);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.gate-card.go { border-color: rgba(0, 200, 100, 0.3); }
+.gate-card.conditional { border-color: rgba(255, 180, 0, 0.3); }
+.gate-card.nogo { border-color: rgba(255, 80, 80, 0.3); }
+
+.gate-icon { font-size: clamp(1.08rem, 1.68vw, 1.32rem); flex-shrink: 0; }
+
+.gate-text {
+  font-size: clamp(0.9rem, 1.35vw, 1.08rem);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.gate-text strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: clamp(0.93rem, 1.38vw, 1.09rem);
+  margin-bottom: 0.15rem;
+}
+
+.final-line {
+  font-family: var(--font-mono);
+  font-size: clamp(0.99rem, 1.44vw, 1.16rem);
+  color: var(--text-muted);
+  text-align: center;
+  padding-top: clamp(0.3rem, 0.6vh, 0.5rem);
+  border-top: 1px solid var(--border);
+}
+
+/* ===== SECTION HEADER COMMON ===== */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: clamp(0.6rem, 1.2vh, 1rem);
+}
+
+.section-header-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+@media (max-height: 700px) {
+  .slide { padding: clamp(1rem, 2vw, 2rem) clamp(1.25rem, 3vw, 3rem); }
+  .exec-grid { gap: 0.5rem; }
+  .cap-grid { gap: 0.5rem; }
+  .team-grid { gap: 0.5rem; }
+  .gov-grid { gap: 0.5rem; }
+  .eval-grid { gap: 0.75rem; }
+  .roadmap-row { gap: 0.5rem; }
+  .stat-block { gap: 0.4rem; }
+  .fact-list { gap: 0.4rem; }
+  .pain-list { gap: 0.4rem; }
+  .phase-bullet { padding-top: 0.1rem; padding-bottom: 0.1rem; }
+  .gov-bullet { padding-top: 0.1rem; padding-bottom: 0.1rem; }
+}
+
+@media (max-height: 600px) {
+  .slide { padding: 0.75rem clamp(1rem, 2.5vw, 2.5rem); }
+  .slide-title { margin-bottom: 0.5rem; font-size: clamp(1.14rem, 2.16vw, 1.68rem); }
+  .exec-card { gap: 0.25rem; padding: 0.5rem 0.75rem; }
+  .exec-card-icon { font-size: 1rem; }
+  .cap-grid { grid-template-columns: repeat(3, 1fr); gap: 0.35rem; }
+  .cap-card { padding: 0.5rem; gap: 0.2rem; }
+  .team-card { padding: 0.5rem 0.75rem; }
+  .gov-card { padding: 0.5rem 0.75rem; }
+  .phase-card { padding: 0.5rem; }
+  .risk-section { padding: 0.4rem 0.65rem; margin-bottom: 0.35rem; }
+  .roadmap-row { margin-bottom: 0.5rem; }
+  .decision-gate { gap: 0.35rem; }
+  .disclaimer { margin-top: 0.3rem; }
+  .nav-dots { gap: 4px; }
+  .nav-dot { width: 5px; height: 5px; }
+}
+
+@media (max-height: 500px) {
+  html { font-size: 13px; }
+  .slide { padding: 0.5rem clamp(0.75rem, 2vw, 2rem); }
+  .slide-title { font-size: clamp(1.02rem, 1.92vw, 1.44rem); margin-bottom: 0.35rem; }
+  .exec-grid { gap: 0.3rem; }
+  .exec-card { padding: 0.35rem 0.5rem; }
+  .cap-card { padding: 0.35rem 0.5rem; }
+  .team-card { padding: 0.35rem 0.5rem; }
+  .gov-card { padding: 0.35rem 0.5rem; }
+  .arch-box { padding: 0.35rem 0.5rem; }
+  .phase-card { padding: 0.35rem 0.5rem; }
+  .gate-card { padding: 0.35rem 0.5rem; }
+  .risk-section { padding: 0.3rem 0.5rem; margin-bottom: 0.25rem; }
+  .roadmap-row { gap: 0.35rem; margin-bottom: 0.4rem; }
+  .nav-dots { gap: 3px; }
+  .nav-dot { width: 4px; height: 4px; }
+  .slide-counter { bottom: 0.5rem; right: 1.5rem; }
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  html { scroll-behavior: auto; }
+  .progress-bar { transition: none; }
+}
+
+/* ===== SLIDE-SPECIFIC EXTRAS ===== */
+.header-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: clamp(0.6rem, 1.2vh, 1rem);
+}
+
+.header-label {
+  font-family: var(--font-mono);
+  font-size: clamp(0.93rem, 1.42vw, 1.12rem);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.col-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.75rem, 1.5vw, 1.25rem);
+  height: 100%;
+}
+</style>
+</head>
+<body>
+
+<!-- PROGRESS BAR -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- NAV DOTS -->
+<div class="nav-dots" id="navDots"></div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: TITLE -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-1">
+  <div class="title-accent-bar"></div>
+
+  <div class="title-slide-content">
+    <div class="mono-label reveal">DSAI CAPSTONE &nbsp;·&nbsp; PROOF OF CONCEPT &nbsp;·&nbsp; 14 March 2026</div>
+
+    <h1 class="reveal">AI-Assisted PFI Reporting</h1>
+
+    <h2 class="reveal">A Governance-Aware AWS RAG Proof of Concept<br>for Competent Person Workflows</h2>
+
+    <div class="divider reveal"></div>
+
+    <div class="team-row reveal">Nina &nbsp;·&nbsp; Esther &nbsp;·&nbsp; Anders &nbsp;·&nbsp; Shengqing &nbsp;·&nbsp; Ashley &nbsp;·&nbsp; Chris</div>
+
+    <div class="meta-pills reveal">
+      <span class="pill">AWS Bedrock</span>
+      <span class="pill">IMDA MGF</span>
+      <span class="pill">BCA Aligned</span>
+    </div>
+  </div>
+
+  <div class="slide-counter">01 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: EXECUTIVE SUMMARY -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-2">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Executive Summary</div>
+    <div class="slide-title">What this POC is — and is not</div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="exec-grid" style="flex:1;">
+    <div class="exec-card reveal">
+      <div class="exec-card-icon">🏗</div>
+      <div class="exec-card-title">The Problem</div>
+      <div class="exec-card-text">CP report preparation is manual, fragmented, and time-intensive. Inspection knowledge is scattered across drones, close-range reports, images, and prior documents.</div>
+    </div>
+    <div class="exec-card reveal">
+      <div class="exec-card-icon">🤖</div>
+      <div class="exec-card-title">The Solution</div>
+      <div class="exec-card-text">An AWS RAG assistant that ingests inspection data, retrieves relevant evidence, and drafts structured, regulation-aligned report sections for CP review.</div>
+    </div>
+    <div class="exec-card reveal">
+      <div class="exec-card-icon">🔒</div>
+      <div class="exec-card-title">The Approach</div>
+      <div class="exec-card-text">Two-agent architecture with governance guardrails, human-in-the-loop checkpoints, and IMDA Model Governance Framework alignment.</div>
+    </div>
+    <div class="exec-card reveal">
+      <div class="exec-card-icon">✅</div>
+      <div class="exec-card-title">The Outcome</div>
+      <div class="exec-card-text">POC validates technical feasibility, output quality, and operational cost — informing the decision to scale to production.</div>
+    </div>
+  </div>
+
+  <div class="disclaimer reveal">This system augments professional judgment. All outputs are draft assistance requiring CP validation and sign-off.</div>
+  <div class="slide-counter">02 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: WHAT IS PFI -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-3">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Background</div>
+    <div class="slide-title">What is PFI and Why It <span>Matters</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="two-col" style="flex:1; align-items:start;">
+    <div class="stat-block">
+      <div class="stat-item reveal">
+        <div class="stat-number">2022</div>
+        <div class="stat-label">Year PFI regime commenced<br>(effective 1 Jan 2022)</div>
+      </div>
+      <div class="stat-item reveal">
+        <div class="stat-number">7 yrs</div>
+        <div class="stat-label">Mandatory inspection cycle<br>per building</div>
+      </div>
+      <div class="stat-item reveal">
+        <div class="stat-number">20 yr / 13m</div>
+        <div class="stat-label">Building age and height<br>threshold for compliance</div>
+      </div>
+    </div>
+
+    <div class="fact-list">
+      <div class="fact-item reveal">Mandatory under Singapore BCA Building Control Act</div>
+      <div class="fact-item reveal">Applies to buildings &gt;20 years old and &gt;13m in height (with statutory exclusions)</div>
+      <div class="fact-item reveal">Competent Person (CP) must be appointed for each inspection cycle</div>
+      <div class="fact-item reveal">Scope: 100% visual inspection + ≥10% close-range inspection per building face</div>
+      <div class="fact-item reveal">CP submits formal report; repair works carried out as recommended by CP</div>
+    </div>
+  </div>
+
+  <div class="bottom-note reveal">Non-compliance may result in enforcement action by the Commissioner of Building Control.</div>
+  <div class="slide-counter">03 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: THE PROBLEM -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-4">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Problem Statement</div>
+    <div class="slide-title">High Administrative Burden, Fragmented Evidence, <span>Inconsistent Output</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="pain-list">
+    <div class="pain-item reveal">
+      <div class="pain-number">01</div>
+      <div class="pain-content">
+        <div class="pain-title">FRAGMENTED KNOWLEDGE</div>
+        <div class="pain-desc">Inspection data spans drone footage, close-range reports, defect images, and prior submissions — all in separate systems.</div>
+      </div>
+    </div>
+    <div class="pain-item reveal">
+      <div class="pain-number">02</div>
+      <div class="pain-content">
+        <div class="pain-title">REPETITIVE COMPILATION</div>
+        <div class="pain-desc">Standard report sections require manual population of consistent information across every inspection cycle.</div>
+      </div>
+    </div>
+    <div class="pain-item reveal">
+      <div class="pain-number">03</div>
+      <div class="pain-content">
+        <div class="pain-title">SLOW EVIDENCE RETRIEVAL</div>
+        <div class="pain-desc">Cross-referencing relevant findings, images, and prior defects is time-consuming and error-prone.</div>
+      </div>
+    </div>
+    <div class="pain-item reveal">
+      <div class="pain-number">04</div>
+      <div class="pain-content">
+        <div class="pain-title">INCONSISTENCY RISK</div>
+        <div class="pain-desc">Report quality and language varies between CPs, increasing rework and review time.</div>
+      </div>
+    </div>
+    <div class="pain-item reveal">
+      <div class="pain-number">05</div>
+      <div class="pain-content">
+        <div class="pain-title">REDUCED CAPACITY FOR JUDGMENT</div>
+        <div class="pain-desc">Administrative overhead reduces time available for professional analysis and decision-making.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-counter">04 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: INSPECTION WORKFLOW -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-5">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Process Overview</div>
+    <div class="slide-title">From Appointment to Submission: <span>The 7-Year Inspection Cycle</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="flow-container" style="flex:1;">
+    <!-- Main flow row -->
+    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:0; reveal;" class="reveal">
+      <div class="flow-step">CP Appointed</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="flex:1; min-width:160px; max-width:220px; white-space:normal; text-align:center; font-size:clamp(0.58rem,0.85vw,0.68rem);">100% Visual Inspection<br>+ ≥10% Close-Range per Face</div>
+      <div class="flow-arrow">→</div>
+      <div class="decision-wrapper">
+        <div class="decision">
+          <div class="decision-label">Full Invest.<br>Required?</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Branch YES (top) -->
+    <div style="margin-left:clamp(14rem,28vw,22rem);" class="reveal">
+      <div style="display:flex; align-items:center; gap:0; margin-bottom:0.4rem;">
+        <span class="branch-label">YES →</span>
+        <div class="flow-step dim">Submit Interim Report</div>
+        <div class="flow-arrow dim">→</div>
+        <div class="flow-step dim">BCA Approval</div>
+        <div class="flow-arrow dim">→</div>
+        <div class="flow-step dim">Full Façade Investigation</div>
+        <div class="flow-arrow dim">→</div>
+        <div class="flow-step dim">Submit Final Report</div>
+      </div>
+    </div>
+
+    <!-- Branch NO (bottom) -->
+    <div style="margin-left:clamp(14rem,28vw,22rem);" class="reveal">
+      <div style="display:flex; align-items:center; gap:0;">
+        <span class="branch-label">NO →</span>
+        <div class="flow-step">Submit PFI Report</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Carry Out Repairs<br><span style="font-size:0.85em;color:var(--text-secondary);">(if recommended)</span></div>
+      </div>
+    </div>
+
+    <div class="flow-note reveal">Cycle repeats every 7 years. CP accountable throughout.</div>
+  </div>
+
+  <div class="slide-counter">05 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: ROLES & TEAMS -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-6">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Organisation</div>
+    <div class="slide-title">CP Oversight with <span>Specialist Supporting Teams</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="roles-grid" style="flex:1;">
+    <!-- Left: CP -->
+    <div class="cp-card reveal" style="display:flex; flex-direction:column; gap:0.35rem;">
+      <div class="role-card-title" style="color:var(--accent-cyan); border-color:rgba(30,136,229,0.3); padding-bottom:0.4rem; margin-bottom:0.25rem; border-bottom: 1px solid rgba(30,136,229,0.3); font-family:var(--font-mono); font-size:clamp(0.62rem,0.95vw,0.75rem); letter-spacing:0.08em;">Competent Person (CP)</div>
+      <div class="role-bullet">Appointed responsible professional</div>
+      <div class="role-bullet">Oversees all inspection and reporting</div>
+      <div class="role-bullet">Exercises professional judgment on findings</div>
+      <div class="role-bullet">Signs off and submits formal PFI report</div>
+    </div>
+
+    <!-- Right: two team blocks stacked -->
+    <div style="display:flex; flex-direction:column; gap:clamp(0.5rem,1vh,0.75rem);">
+      <div class="role-card reveal">
+        <div class="role-card-title">Drone Inspection Team &nbsp;(100% Visual Scope)</div>
+        <div class="role-bullet">Technical Manager — overall coordination</div>
+        <div class="role-bullet">Drone Pilot — flight operations</div>
+        <div class="role-bullet">Ground Crew — safety and logistics</div>
+        <div class="role-bullet">Analyst — footage review and defect flagging</div>
+      </div>
+      <div class="role-card reveal">
+        <div class="role-card-title">Close-Range Inspection Team &nbsp;(≥10% per Face)</div>
+        <div class="role-bullet">Façade Inspector (FI) — leads close-range examination</div>
+        <div class="role-bullet">Inspection Crew — physical access and documentation</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="roles-connector reveal">CP receives reports from both teams and synthesises findings into the PFI report.</div>
+  <div class="slide-counter">06 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: PROPOSED SOLUTION -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-7">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Solution Overview</div>
+    <div class="slide-title">Augmenting the CP Workflow, <span>Not Replacing Professional Judgment</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="cap-grid" style="flex:1;">
+    <div class="cap-card reveal">
+      <div class="cap-icon">📥</div>
+      <div class="cap-title">Document Ingestion</div>
+      <div class="cap-desc">PDF reports, images, and structured inspection data ingested automatically.</div>
+    </div>
+    <div class="cap-card reveal">
+      <div class="cap-icon">🧩</div>
+      <div class="cap-title">Chunking & Indexing</div>
+      <div class="cap-desc">Documents parsed, chunked, and embedded into a searchable knowledge base.</div>
+    </div>
+    <div class="cap-card reveal">
+      <div class="cap-icon">🔍</div>
+      <div class="cap-title">Semantic Retrieval</div>
+      <div class="cap-desc">Relevant evidence retrieved per report section using multi-hop queries.</div>
+    </div>
+    <div class="cap-card reveal">
+      <div class="cap-icon">✍️</div>
+      <div class="cap-title">Draft Generation</div>
+      <div class="cap-desc">LLM produces structured, BCA-aligned draft report sections from retrieved evidence.</div>
+    </div>
+    <div class="cap-card reveal">
+      <div class="cap-icon">🔒</div>
+      <div class="cap-title">Compliance Guardrails</div>
+      <div class="cap-desc">Denied topics, output constraints, and scope controls prevent unsafe outputs.</div>
+    </div>
+    <div class="cap-card reveal">
+      <div class="cap-icon">👤</div>
+      <div class="cap-title">Human-in-the-Loop</div>
+      <div class="cap-desc">CP reviews, edits, and approves all outputs. System never submits on CP's behalf.</div>
+    </div>
+  </div>
+
+  <div class="slide-counter">07 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: END-TO-END WORKFLOW -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-8">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">System Workflow</div>
+    <div class="slide-title">From Inspection Data to <span>CP-Reviewed Draft Report</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="pipeline-container">
+    <div class="pipeline-row reveal">
+      <div class="pipeline-step">
+        <div class="pipeline-icon">📂</div>
+        <div class="pipeline-label">Inspection Data</div>
+        <div class="pipeline-sub">Drone reports · PDFs · Images · Structured data</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">⚙️</div>
+        <div class="pipeline-label">Ingestion & Parsing</div>
+        <div class="pipeline-sub">Text extraction · OCR · Chunking · Embedding</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🗄</div>
+        <div class="pipeline-label">Knowledge Base</div>
+        <div class="pipeline-sub">AWS Bedrock Knowledge Base · Vector store</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🔍</div>
+        <div class="pipeline-label">Retrieval</div>
+        <div class="pipeline-sub">Semantic search · Multi-hop · Fallback logic</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🤖</div>
+        <div class="pipeline-label">LLM Generation</div>
+        <div class="pipeline-sub">AWS Bedrock LLM · Prompt templates</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">📄</div>
+        <div class="pipeline-label">Draft Report</div>
+        <div class="pipeline-sub">Structured sections · BCA-aligned format</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step" style="border-color: var(--accent);">
+        <div class="pipeline-icon">👤</div>
+        <div class="pipeline-label">CP Review & Sign-off</div>
+        <div class="pipeline-sub">Human validation · Professional sign-off</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-counter">08 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: TWO-AGENT ARCHITECTURE -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-9">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Architecture</div>
+    <div class="slide-title">Hierarchical Two-Agent Design: <span>Orchestrator + Executor</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="arch-container" style="flex:1;">
+    <!-- USER ROW -->
+    <div class="arch-row reveal" style="justify-content:flex-start; gap:0.5rem;">
+      <div class="user-box">
+        <div class="user-box-icon">👤</div>
+        <div class="user-box-label">User / CP</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--accent); font-size:1.1rem; gap:0.1rem;">
+        <span>↕</span>
+        <span style="font-family:var(--font-mono); font-size:clamp(0.5rem,0.75vw,0.6rem); color:var(--text-muted); writing-mode:horizontal-tb; white-space:nowrap;">Converse API</span>
+      </div>
+    </div>
+
+    <!-- AWS BOUNDARY -->
+    <div class="aws-boundary reveal" style="flex:1;">
+      <div class="aws-label">AWS CLOUD</div>
+      <div class="aws-inner">
+        <!-- AGENTS ROW -->
+        <div class="aws-inner-row">
+          <!-- Chat Agent -->
+          <div class="arch-box primary" style="flex:1;">
+            <div class="arch-box-title">🧠 Chat Agent — CP Report Assistant</div>
+            <div class="arch-box-role">Bedrock Engineer App · Intelligent Orchestrator</div>
+            <div class="arch-bullet">Understands intent, gathers context</div>
+            <div class="arch-bullet">Crafts self-contained queries for backend</div>
+            <div class="arch-bullet">Evaluates responses for quality & BCA compliance</div>
+            <div class="arch-bullet">Handles image analysis (recognizeImage)</div>
+            <div class="arch-bullet">Flags quality issues before surfacing to CP</div>
+          </div>
+
+          <div style="display:flex; align-items:center; padding: 0 0.5rem; color:var(--accent); font-size:1rem; flex-direction:column; gap:0.1rem;">
+            <span>→</span>
+            <span style="font-family:var(--font-mono); font-size:clamp(0.48rem,0.7vw,0.58rem); color:var(--text-muted); white-space:nowrap;">self-contained queries</span>
+          </div>
+
+          <!-- Bedrock Agent -->
+          <div class="arch-box secondary" style="flex:1;">
+            <div class="arch-box-title">🤖 Bedrock Agent — cp-report-agent</div>
+            <div class="arch-box-role">Backend Executor · 4 Action Groups</div>
+            <div class="arch-bullet">Creates and manages report projects</div>
+            <div class="arch-bullet">Updates section data per CP workflow</div>
+            <div class="arch-bullet">Renders reports (Word template → S3)</div>
+            <div class="arch-bullet">BCA compliance audit & defect classification</div>
+            <div class="arch-bullet">Queries knowledge base with fallback logic</div>
+          </div>
+        </div>
+
+        <!-- ARROW DOWN -->
+        <div style="text-align:center; color:var(--accent); font-size:0.9rem; line-height:1;">↓</div>
+
+        <!-- INFRA ROW -->
+        <div class="aws-inner-row" style="gap:clamp(0.4rem,0.8vw,0.65rem);">
+          <div class="arch-box" style="flex:1; text-align:center;">
+            <div class="arch-box-title" style="text-align:center;">⚡ Lambda</div>
+            <div style="font-size:clamp(0.55rem,0.8vw,0.65rem); color:var(--text-muted);">Single function · 4 action groups</div>
+          </div>
+          <div style="display:flex; align-items:center; color:var(--accent); font-size:0.9rem;">↔</div>
+          <div class="arch-box" style="flex:1; text-align:center;">
+            <div class="arch-box-title" style="text-align:center;">🗄 DynamoDB</div>
+            <div style="font-size:clamp(0.55rem,0.8vw,0.65rem); color:var(--text-muted);">Report state & project data</div>
+          </div>
+          <div style="display:flex; align-items:center; color:var(--accent); font-size:0.9rem;">↔</div>
+          <div class="arch-box" style="flex:1; text-align:center;">
+            <div class="arch-box-title" style="text-align:center;">☁️ S3</div>
+            <div style="font-size:clamp(0.55rem,0.8vw,0.65rem); color:var(--text-muted);">Rendered documents · Presigned URLs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-counter">09 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: GUARDRAILS -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-10">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Scope Control</div>
+    <div class="slide-title">Scope Control by Design — <span>Not as an Afterthought</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="guardrail-grid" style="flex:1;">
+    <!-- Left: What system will NOT do -->
+    <div class="reveal">
+      <div class="col-content">
+        <div class="guardrail-col-title">What the System Will Not Do</div>
+
+        <div class="guardrail-category">
+          <div class="guardrail-cat-label">STRUCTURAL SAFETY</div>
+          <div class="guardrail-cat-text">No structural engineering advice beyond inspection scope</div>
+        </div>
+        <div class="guardrail-category">
+          <div class="guardrail-cat-label">LEGAL &amp; LIABILITY</div>
+          <div class="guardrail-cat-text">No legal conclusions or liability assignments</div>
+        </div>
+        <div class="guardrail-category">
+          <div class="guardrail-cat-label">FINANCIAL ESTIMATES</div>
+          <div class="guardrail-cat-text">No repair cost estimation</div>
+        </div>
+        <div class="guardrail-category">
+          <div class="guardrail-cat-label">SAFETY GUARANTEES</div>
+          <div class="guardrail-cat-text">No safety certifications or absolute assurances</div>
+        </div>
+        <div class="guardrail-category">
+          <div class="guardrail-cat-label">INAPPROPRIATE CONTENT</div>
+          <div class="guardrail-cat-text">True threats, defamation, obscenity, fighting words blocked</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Why guardrails exist -->
+    <div class="reveal">
+      <div class="col-content">
+        <div class="guardrail-col-title">Why These Guardrails Exist</div>
+        <div class="guardrail-why-item">Prevent out-of-scope professional advice that requires separate expertise</div>
+        <div class="guardrail-why-item">Protect users from relying on AI for legal or structural decisions</div>
+        <div class="guardrail-why-item">Ensure outputs remain within the role of a reporting assistant</div>
+        <div class="guardrail-why-item">Comply with responsible AI standards and BCA professional standards</div>
+        <div class="guardrail-why-item">Reinforce that CP professional judgment and accountability is irreplaceable</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="guardrail-quote reveal">"The system is a draft assistant. It does not replace the Competent Person."</div>
+  <div class="slide-counter">10 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11: IMDA MGF ALIGNMENT -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-11">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Governance</div>
+    <div class="slide-title">Aligned with Singapore's <span>IMDA Model Governance Framework</span> for Agentic AI</div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="gov-grid" style="flex:1;">
+    <div class="gov-card reveal">
+      <div class="gov-pillar-label">PILLAR 1</div>
+      <div class="gov-pillar-title">Risk Assessment &amp; Scoping</div>
+      <div class="gov-bullet">Define agent boundaries and limit tool permissions</div>
+      <div class="gov-bullet">Standardized risk assessment across harm severity, autonomy, data sensitivity</div>
+      <div class="gov-bullet">IAM controls, audit logging, ADLC governance</div>
+    </div>
+    <div class="gov-card reveal">
+      <div class="gov-pillar-label">PILLAR 2</div>
+      <div class="gov-pillar-title">Governance &amp; Human Accountability</div>
+      <div class="gov-bullet">RACI model with clear ownership per system component</div>
+      <div class="gov-bullet">Human-in-the-loop at report review, output flagging, and deployment gates</div>
+      <div class="gov-bullet">Oversight from design through deployment and monitoring</div>
+    </div>
+    <div class="gov-card reveal">
+      <div class="gov-pillar-label">PILLAR 3</div>
+      <div class="gov-pillar-title">Technical Controls &amp; Reliability</div>
+      <div class="gov-bullet">Advanced RAG: recursive retrieval, dynamic weighting, multi-hop verification</div>
+      <div class="gov-bullet">Input + output guardrails with semantic constraints</div>
+      <div class="gov-bullet">Continuous evaluation of retrieval quality and generation faithfulness</div>
+    </div>
+    <div class="gov-card reveal">
+      <div class="gov-pillar-label">PILLAR 4</div>
+      <div class="gov-pillar-title">User Empowerment &amp; Training</div>
+      <div class="gov-bullet">Mandatory AI literacy (AI 101) for all users</div>
+      <div class="gov-bullet">UI disclaimers and human verification reminders on every output</div>
+      <div class="gov-bullet">Transparency of system capabilities, limitations, and denied topics</div>
+    </div>
+  </div>
+
+  <div class="gov-footer reveal">Reference: IMDA Model Governance Framework for Agentic AI (2024)</div>
+  <div class="slide-counter">11 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12: RISK ASSESSMENT -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-12" style="padding-top: clamp(0.75rem, 2vw, 1.5rem); padding-bottom: clamp(0.75rem, 2vw, 1.5rem);">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.2rem;">Risk Management</div>
+    <div class="slide-title" style="margin-bottom:0.2rem;">Actively Managed Risk — <span>Balanced Controls Across Architecture and Governance</span></div>
+    <div class="divider" style="margin-bottom:0.4rem;"></div>
+  </div>
+
+  <!-- Agent Classification -->
+  <div class="risk-section reveal" style="margin-bottom:0.4rem;">
+    <div class="risk-section-title" style="margin-bottom:0.25rem;">Agent Classification</div>
+    <div class="tag-row">
+      <span class="tag blue">Task-Specific</span>
+      <span class="tag blue">Conversational</span>
+      <span class="tag blue">Reasoning</span>
+      <span class="tag blue">Reflection Agent</span>
+    </div>
+    <div class="tag-row">
+      <span class="tag cyan">Hierarchical</span>
+      <span class="tag cyan">Multi-Agent</span>
+      <span class="tag cyan">Multimodal</span>
+      <span class="tag cyan">Tool-Using</span>
+    </div>
+  </div>
+
+  <!-- Risk Dimensions -->
+  <div class="risk-section reveal" style="margin-bottom:0.4rem;">
+    <div class="risk-section-title" style="margin-bottom:0.25rem;">Risk Dimensions</div>
+    <div class="risk-table">
+      <div class="risk-row">
+        <div class="risk-label">Potential Harm Severity</div>
+        <div class="risk-badge medium">MEDIUM</div>
+      </div>
+      <div class="risk-row">
+        <div class="risk-label">Autonomy &amp; Reversibility</div>
+        <div class="risk-badge low-med">LOW-MEDIUM</div>
+      </div>
+      <div class="risk-row">
+        <div class="risk-label">Data Sensitivity</div>
+        <div class="risk-badge medium">MEDIUM</div>
+      </div>
+      <div class="risk-row">
+        <div class="risk-label">Operational Criticality</div>
+        <div class="risk-badge medium">MEDIUM</div>
+      </div>
+      <div class="risk-row">
+        <div class="risk-label">Scale &amp; Reach</div>
+        <div class="risk-badge low">LOW</div>
+      </div>
+      <div class="risk-row">
+        <div class="risk-label">Robustness &amp; Cyber Posture</div>
+        <div class="risk-badge medium">MEDIUM</div>
+      </div>
+      <div class="risk-row">
+        <div class="risk-label">Human Oversight Strength</div>
+        <div class="risk-badge high">HIGH</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADLC -->
+  <div class="risk-section reveal" style="margin-bottom:0;">
+    <div class="risk-section-title" style="margin-bottom:0.25rem;">ADLC Environment Progression</div>
+    <div class="adlc-row">
+      <div class="adlc-box">
+        <div class="adlc-label">DEV</div>
+        <div class="adlc-item">Synthetic Data · Anonymized Historical · Public Datasets</div>
+      </div>
+      <div class="adlc-box">
+        <div class="adlc-label">STAGING</div>
+        <div class="adlc-item">Masked PII/PHI/PFI · Masked Trade Secrets · Deidentified Production · Edge Cases</div>
+      </div>
+      <div class="adlc-box prod">
+        <div class="adlc-label">PRODUCTION</div>
+        <div class="adlc-item">LIVE Inspection Data (post-POC validation only)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-counter">12 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13: EVALUATION FRAMEWORK -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-13">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Evaluation</div>
+    <div class="slide-title">Rigorous Validation Across <span>Retrieval, Generation, and Business Quality</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="eval-grid" style="flex:1;">
+    <!-- Retrieval -->
+    <div class="eval-col reveal">
+      <div class="col-content" style="height:100%;">
+        <div class="eval-col-title">Retrieval Accuracy</div>
+        <div class="eval-item">
+          <div class="eval-item-title">Context Precision</div>
+          <div class="eval-item-desc">Are retrieved chunks relevant to the query?</div>
+        </div>
+        <div class="eval-item">
+          <div class="eval-item-title">Context Recall</div>
+          <div class="eval-item-desc">Are all relevant chunks retrieved?</div>
+        </div>
+        <div class="eval-item">
+          <div class="eval-item-title">Context Relevance</div>
+          <div class="eval-item-desc">Is retrieved context appropriate for the section?</div>
+        </div>
+        <div class="eval-item">
+          <div class="eval-item-title">Context Entities Recall</div>
+          <div class="eval-item-desc">Are key defect entities present in retrieved content?</div>
+        </div>
+        <div class="eval-tech">Hit Rate @ K &nbsp;·&nbsp; cosine similarity &nbsp;·&nbsp; mAP</div>
+      </div>
+    </div>
+
+    <!-- Generation -->
+    <div class="eval-col reveal">
+      <div class="col-content" style="height:100%;">
+        <div class="eval-col-title">Generation Quality</div>
+        <div class="eval-item">
+          <div class="eval-item-title">Faithfulness / Groundedness</div>
+          <div class="eval-item-desc">Is output grounded in retrieved evidence?</div>
+        </div>
+        <div class="eval-item">
+          <div class="eval-item-title">Hallucination Rate</div>
+          <div class="eval-item-desc">Zero-tolerance audit for unsupported claims.</div>
+        </div>
+        <div class="eval-item">
+          <div class="eval-item-title">Answer Relevance</div>
+          <div class="eval-item-desc">Does output answer the intended section objective?</div>
+        </div>
+        <div class="eval-item">
+          <div class="eval-item-title">Answer Correctness</div>
+          <div class="eval-item-desc">Verified against expert reference answers.</div>
+        </div>
+        <div class="eval-tech">BERTScore &nbsp;·&nbsp; NLI checks &nbsp;·&nbsp; NER checks &nbsp;·&nbsp; semantic similarity</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Business Validation -->
+  <div style="margin-top:clamp(0.4rem,0.8vh,0.65rem);">
+    <div class="mono-label reveal" style="margin-bottom:0.4rem;">Business Validation</div>
+    <div class="biz-row reveal">
+      <div class="biz-item">
+        <div class="biz-title">SME Chunk Audits</div>
+        <div class="biz-desc">Subject matter expert review of knowledge base coverage</div>
+      </div>
+      <div class="biz-item">
+        <div class="biz-title">Zero-Tolerance Hallucination Audit</div>
+        <div class="biz-desc">Any hallucinated defect finding = fail</div>
+      </div>
+      <div class="biz-item">
+        <div class="biz-title">User Feedback</div>
+        <div class="biz-desc">CP usability rating + thumbs up/down on draft sections</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-counter">13 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14: TEAM ROLES -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-14">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Team</div>
+    <div class="slide-title">Cross-Functional Team — <span>Aligned Across AI, Cloud, Governance, and UX</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="team-grid" style="flex:1;">
+    <div class="team-card reveal">
+      <div class="team-name">Nina</div>
+      <div class="team-role">Agent Engineer</div>
+      <div class="team-desc">Design and build the AWS Bedrock agent. Ensures functionality and integration with the tools.</div>
+    </div>
+    <div class="team-card reveal">
+      <div class="team-name">Esther</div>
+      <div class="team-role">Frontend &amp; UX Engineer</div>
+      <div class="team-desc">Builds the CP-facing interface. Ensures usability, disclaimer display, and feedback mechanisms.</div>
+    </div>
+    <div class="team-card reveal">
+      <div class="team-name">Anders</div>
+      <div class="team-role">Governance &amp; Quality Engineer</div>
+      <div class="team-desc">Leads IMDA framework alignment, RACI definition, guardrail specification, and evaluation governance.</div>
+    </div>
+    <div class="team-card reveal">
+      <div class="team-name">Shengqing</div>
+      <div class="team-role">Ingestion &amp; Data Engineer</div>
+      <div class="team-desc">Designs the document ingestion pipeline, chunking strategy, and knowledge base construction.</div>
+    </div>
+    <div class="team-card reveal">
+      <div class="team-name">Ashley</div>
+      <div class="team-role">Prompt Engineer</div>
+      <div class="team-desc">Authors and tests prompt templates, BCA compliance prompts, and evaluation prompt sets.</div>
+    </div>
+    <div class="team-card reveal">
+      <div class="team-name">Chris</div>
+      <div class="team-role">Cloud Engineer</div>
+      <div class="team-desc">Provisions and maintains AWS infrastructure: Bedrock, Lambda, DynamoDB, S3, IAM policies.</div>
+    </div>
+  </div>
+
+  <div class="slide-counter">14 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: ROADMAP -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-15">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Roadmap &amp; Recommendation</div>
+    <div class="slide-title">Phased Execution — <span>Governance Before Scale</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="roadmap-row reveal">
+    <div class="phase-card">
+      <div class="phase-num">PHASE 1</div>
+      <div class="phase-title">Risk Assessment &amp; Scoping</div>
+      <div class="phase-bullet">Define agent scope and RACI</div>
+      <div class="phase-bullet">Complete risk matrix</div>
+      <div class="phase-bullet">Data classification and IAM setup</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">PHASE 2</div>
+      <div class="phase-title">Technical Controls &amp; Reliability</div>
+      <div class="phase-bullet">Build ingestion pipeline and knowledge base</div>
+      <div class="phase-bullet">Deploy two-agent architecture</div>
+      <div class="phase-bullet">Implement guardrails and evaluation harness</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">PHASE 3</div>
+      <div class="phase-title">Evaluation &amp; Gradual Rollout</div>
+      <div class="phase-bullet">Run retrieval + generation evaluation</div>
+      <div class="phase-bullet">CP usability testing with synthetic/staged data</div>
+      <div class="phase-bullet">Continuous monitoring and feedback loop</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">PHASE 4</div>
+      <div class="phase-title">User Training &amp; Production Readiness</div>
+      <div class="phase-bullet">AI literacy training for CP users</div>
+      <div class="phase-bullet">UI transparency updates</div>
+      <div class="phase-bullet">Final POC report and production readiness decision</div>
+    </div>
+  </div>
+
+  <!-- Decision Gate -->
+  <div style="margin-bottom:clamp(0.4rem,0.8vh,0.6rem);">
+    <div class="mono-label reveal" style="margin-bottom:clamp(0.4rem,0.8vh,0.6rem);">Decision Gate</div>
+    <div class="decision-gate reveal">
+      <div class="gate-card go">
+        <div class="gate-icon">✅</div>
+        <div class="gate-text">
+          <strong>GO</strong>
+          POC meets success criteria → proceed to production scaling
+        </div>
+      </div>
+      <div class="gate-card conditional">
+        <div class="gate-icon">⚠️</div>
+        <div class="gate-text">
+          <strong>CONDITIONAL GO</strong>
+          Issues identified → address with defined remediation plan
+        </div>
+      </div>
+      <div class="gate-card nogo">
+        <div class="gate-icon">❌</div>
+        <div class="gate-text">
+          <strong>NO GO</strong>
+          Fundamental blockers found → reassess scope or approach
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="final-line reveal">All findings documented. CP professional accountability is preserved throughout — at POC stage and beyond.</div>
+  <div class="slide-counter">15 / 15</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================ -->
+<script>
+(function() {
+  'use strict';
+
+  const TOTAL_SLIDES = 15;
+
+  class SlidePresentation {
+    constructor() {
+      this.currentSlide = 1;
+      this.isScrolling = false;
+      this.scrollDebounceTimer = null;
+      this.touchStartY = 0;
+      this.touchStartX = 0;
+
+      this.progressBar = document.getElementById('progressBar');
+      this.navDotsContainer = document.getElementById('navDots');
+      this.slides = document.querySelectorAll('.slide');
+
+      this.init();
+    }
+
+    init() {
+      this.generateNavDots();
+      this.setupKeyboardNavigation();
+      this.setupScrollNavigation();
+      this.setupTouchNavigation();
+      this.setupIntersectionObserver();
+      this.setupScrollSnapObserver();
+      this.updateUI(1);
+    }
+
+    generateNavDots() {
+      for (let i = 1; i <= TOTAL_SLIDES; i++) {
+        const dot = document.createElement('button');
+        dot.className = 'nav-dot';
+        dot.setAttribute('aria-label', `Go to slide ${i}`);
+        dot.setAttribute('title', `Slide ${i}`);
+        dot.addEventListener('click', () => this.goToSlide(i));
+        this.navDotsContainer.appendChild(dot);
+      }
+    }
+
+    goToSlide(n) {
+      if (n < 1 || n > TOTAL_SLIDES) return;
+      const target = document.getElementById(`slide-${n}`);
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      this.currentSlide = n;
+      this.updateUI(n);
+    }
+
+    updateUI(n) {
+      // Progress bar
+      const progress = ((n - 1) / (TOTAL_SLIDES - 1)) * 100;
+      this.progressBar.style.width = `${progress}%`;
+
+      // Nav dots
+      const dots = this.navDotsContainer.querySelectorAll('.nav-dot');
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i + 1 === n);
+      });
+    }
+
+    setupKeyboardNavigation() {
+      document.addEventListener('keydown', (e) => {
+        switch (e.key) {
+          case 'ArrowDown':
+          case 'ArrowRight':
+          case ' ':
+            e.preventDefault();
+            this.goToSlide(this.currentSlide + 1);
+            break;
+          case 'ArrowUp':
+          case 'ArrowLeft':
+            e.preventDefault();
+            this.goToSlide(this.currentSlide - 1);
+            break;
+          case 'Home':
+            e.preventDefault();
+            this.goToSlide(1);
+            break;
+          case 'End':
+            e.preventDefault();
+            this.goToSlide(TOTAL_SLIDES);
+            break;
+        }
+      });
+    }
+
+    setupScrollNavigation() {
+      window.addEventListener('wheel', (e) => {
+        if (this.isScrolling) return;
+        this.isScrolling = true;
+
+        clearTimeout(this.scrollDebounceTimer);
+        this.scrollDebounceTimer = setTimeout(() => {
+          this.isScrolling = false;
+        }, 800);
+
+        if (e.deltaY > 0) {
+          this.goToSlide(this.currentSlide + 1);
+        } else if (e.deltaY < 0) {
+          this.goToSlide(this.currentSlide - 1);
+        }
+      }, { passive: true });
+    }
+
+    setupTouchNavigation() {
+      document.addEventListener('touchstart', (e) => {
+        this.touchStartY = e.touches[0].clientY;
+        this.touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+
+      document.addEventListener('touchend', (e) => {
+        const deltaY = this.touchStartY - e.changedTouches[0].clientY;
+        const deltaX = this.touchStartX - e.changedTouches[0].clientX;
+
+        // Only react if vertical swipe dominates
+        if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 40) {
+          if (deltaY > 0) {
+            this.goToSlide(this.currentSlide + 1);
+          } else {
+            this.goToSlide(this.currentSlide - 1);
+          }
+        }
+      }, { passive: true });
+    }
+
+    setupIntersectionObserver() {
+      // Reveal animation observer
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, {
+        threshold: 0.1,
+        rootMargin: '0px 0px -5% 0px'
+      });
+
+      document.querySelectorAll('.reveal').forEach(el => {
+        revealObserver.observe(el);
+      });
+    }
+
+    setupScrollSnapObserver() {
+      // Track which slide is currently in view
+      const slideObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            const slideId = entry.target.id;
+            const slideNum = parseInt(slideId.replace('slide-', ''));
+            if (!isNaN(slideNum) && slideNum !== this.currentSlide) {
+              this.currentSlide = slideNum;
+              this.updateUI(slideNum);
+            }
+          }
+        });
+      }, {
+        threshold: 0.5
+      });
+
+      this.slides.forEach(slide => {
+        slideObserver.observe(slide);
+      });
+    }
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      window.presentation = new SlidePresentation();
+    });
+  } else {
+    window.presentation = new SlidePresentation();
+  }
+})();
+</script>
+</body>
+</html>

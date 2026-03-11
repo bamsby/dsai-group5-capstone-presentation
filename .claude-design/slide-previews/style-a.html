@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Style A: Blueprint Precision</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #0B1426;
+    color: #E8F0FE;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(30, 136, 229, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30, 136, 229, 0.06) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+  }
+
+  /* Accent glow top-right */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(ellipse, rgba(30, 136, 229, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .slide {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(2rem, 6vw, 6rem);
+    position: relative;
+  }
+
+  /* Left accent bar */
+  .accent-bar {
+    position: absolute;
+    left: clamp(1.5rem, 4vw, 4rem);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background: linear-gradient(180deg, #1E88E5 0%, #00E5FF 100%);
+    animation: grow-bar 1s cubic-bezier(0.16,1,0.3,1) 0.3s forwards;
+  }
+
+  @keyframes grow-bar {
+    to { height: clamp(160px, 30vh, 260px); }
+  }
+
+  .content {
+    padding-left: clamp(1.5rem, 4vw, 4rem);
+    max-width: 800px;
+    opacity: 0;
+    animation: fade-up 0.8s cubic-bezier(0.16,1,0.3,1) 0.5s forwards;
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .label {
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(0.65rem, 1vw, 0.8rem);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #1E88E5;
+    margin-bottom: clamp(0.75rem, 2vw, 1.5rem);
+    opacity: 0;
+    animation: fade-up 0.8s cubic-bezier(0.16,1,0.3,1) 0.4s forwards;
+  }
+
+  h1 {
+    font-size: clamp(1.8rem, 4vw, 3.2rem);
+    font-weight: 600;
+    line-height: 1.15;
+    color: #FFFFFF;
+    margin-bottom: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  h1 span {
+    color: #1E88E5;
+  }
+
+  .subtitle {
+    font-size: clamp(0.85rem, 1.4vw, 1.1rem);
+    font-weight: 300;
+    color: #7FA8D8;
+    line-height: 1.6;
+    max-width: 520px;
+    opacity: 0;
+    animation: fade-up 0.8s cubic-bezier(0.16,1,0.3,1) 0.7s forwards;
+  }
+
+  .meta {
+    margin-top: clamp(2rem, 4vw, 3rem);
+    display: flex;
+    gap: clamp(1.5rem, 3vw, 3rem);
+    opacity: 0;
+    animation: fade-up 0.8s cubic-bezier(0.16,1,0.3,1) 0.9s forwards;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .meta-label {
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(0.55rem, 0.8vw, 0.65rem);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #3D6B99;
+  }
+
+  .meta-value {
+    font-size: clamp(0.75rem, 1vw, 0.9rem);
+    color: #90B8D8;
+  }
+
+  /* Corner tag */
+  .corner-tag {
+    position: absolute;
+    bottom: clamp(1.5rem, 4vw, 3rem);
+    right: clamp(1.5rem, 4vw, 3rem);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: #1E3A5F;
+    letter-spacing: 0.1em;
+    text-align: right;
+  }
+
+  /* Style label */
+  .style-badge {
+    position: absolute;
+    top: clamp(1.5rem, 3vw, 2.5rem);
+    right: clamp(1.5rem, 4vw, 4rem);
+    background: rgba(30, 136, 229, 0.15);
+    border: 1px solid rgba(30, 136, 229, 0.3);
+    color: #1E88E5;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    padding: 0.4rem 0.9rem;
+    border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+  <div class="slide">
+    <div class="accent-bar"></div>
+    <div class="style-badge">STYLE A — BLUEPRINT PRECISION</div>
+
+    <div class="content">
+      <div class="label">Proof of Concept · AWS RAG System · 2025</div>
+      <h1>AI-Assisted <span>PFI Reporting</span><br>A Governance-Aware<br>AWS RAG POC</h1>
+      <p class="subtitle">Augmenting Competent Person workflows with cloud-based retrieval-augmented generation — draft reports, not decisions.</p>
+      <div class="meta">
+        <div class="meta-item">
+          <span class="meta-label">Domain</span>
+          <span class="meta-value">Built Environment</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Platform</span>
+          <span class="meta-value">AWS Bedrock</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Framework</span>
+          <span class="meta-value">IMDA Agentic AI</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="corner-tag">DSAI CAPSTONE · CONFIDENTIAL</div>
+  </div>
+</body>
+</html>
