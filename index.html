@@ -1379,6 +1379,83 @@ body::after {
   padding: clamp(0.75rem, 1.5vw, 1.25rem);
   height: 100%;
 }
+
+/* ===== SLIDE 16: THANK YOU ===== */
+.thankyou-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  flex: 1;
+  align-items: stretch;
+}
+
+.thankyou-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.75rem, 1.5vw, 1.25rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1vh, 0.75rem);
+}
+
+.thankyou-label {
+  font-family: var(--font-mono);
+  font-size: clamp(0.88rem, 1.25vw, 1rem);
+  color: var(--accent-cyan);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.thankyou-text {
+  font-size: clamp(1rem, 1.55vw, 1.15rem);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.operva-logo-wrap {
+  margin-top: clamp(0.35rem, 1vh, 0.6rem);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: clamp(0.5rem, 1vw, 0.75rem);
+  width: fit-content;
+}
+
+.operva-logo {
+  display: block;
+  width: min(100%, 430px);
+  max-width: 100%;
+  height: auto;
+}
+
+.contact-link {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.35);
+  width: fit-content;
+}
+
+.contact-link:hover {
+  color: #9ff4ff;
+  border-bottom-color: rgba(0, 229, 255, 0.65);
+}
+
+.qr-box {
+  margin-top: clamp(0.35rem, 1vh, 0.6rem);
+  background: #fff;
+  border-radius: 6px;
+  width: min(100%, 250px);
+  aspect-ratio: 1 / 1;
+  padding: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.qr-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
 </style>
 </head>
 <body>
@@ -1413,7 +1490,7 @@ body::after {
     </div>
   </div>
 
-  <div class="slide-counter">01 / 15</div>
+  <div class="slide-counter">01 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -1450,7 +1527,7 @@ body::after {
   </div>
 
   <div class="disclaimer reveal">This system augments professional judgment. All outputs are draft assistance requiring CP validation and sign-off.</div>
-  <div class="slide-counter">02 / 15</div>
+  <div class="slide-counter">02 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -1489,7 +1566,7 @@ body::after {
   </div>
 
   <div class="bottom-note reveal">Non-compliance may result in enforcement action by the Commissioner of Building Control.</div>
-  <div class="slide-counter">03 / 15</div>
+  <div class="slide-counter">03 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -1540,7 +1617,7 @@ body::after {
     </div>
   </div>
 
-  <div class="slide-counter">04 / 15</div>
+  <div class="slide-counter">04 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -1555,7 +1632,7 @@ body::after {
 
   <div class="flow-container" style="flex:1;">
     <!-- Main flow row -->
-    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:0; reveal;" class="reveal">
+    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:0;" class="reveal">
       <div class="flow-step">CP Appointed</div>
       <div class="flow-arrow">→</div>
       <div class="flow-step" style="flex:1; min-width:160px; max-width:220px; white-space:normal; text-align:center; font-size:clamp(0.58rem,0.85vw,0.68rem);">100% Visual Inspection<br>+ ≥10% Close-Range per Face</div>
@@ -1594,7 +1671,7 @@ body::after {
     <div class="flow-note reveal">Cycle repeats every 7 years. CP accountable throughout.</div>
   </div>
 
-  <div class="slide-counter">05 / 15</div>
+  <div class="slide-counter">05 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -1635,7 +1712,7 @@ body::after {
   </div>
 
   <div class="roles-connector reveal">CP receives reports from both teams and synthesises findings into the PFI report.</div>
-  <div class="slide-counter">06 / 15</div>
+  <div class="slide-counter">06 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -1681,7 +1758,7 @@ body::after {
     </div>
   </div>
 
-  <div class="slide-counter">07 / 15</div>
+  <div class="slide-counter">07 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -1740,7 +1817,7 @@ body::after {
     </div>
   </div>
 
-  <div class="slide-counter">08 / 15</div>
+  <div class="slide-counter">08 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -1824,7 +1901,7 @@ body::after {
     </div>
   </div>
 
-  <div class="slide-counter">09 / 15</div>
+  <div class="slide-counter">09 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -1880,7 +1957,7 @@ body::after {
   </div>
 
   <div class="guardrail-quote reveal">"The system is a draft assistant. It does not replace the Competent Person."</div>
-  <div class="slide-counter">10 / 15</div>
+  <div class="slide-counter">10 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -1925,7 +2002,7 @@ body::after {
   </div>
 
   <div class="gov-footer reveal">Reference: IMDA Model Governance Framework for Agentic AI (2024)</div>
-  <div class="slide-counter">11 / 15</div>
+  <div class="slide-counter">11 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -2009,7 +2086,7 @@ body::after {
     </div>
   </div>
 
-  <div class="slide-counter">12 / 15</div>
+  <div class="slide-counter">12 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -2089,7 +2166,7 @@ body::after {
     </div>
   </div>
 
-  <div class="slide-counter">13 / 15</div>
+  <div class="slide-counter">13 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -2135,7 +2212,7 @@ body::after {
     </div>
   </div>
 
-  <div class="slide-counter">14 / 15</div>
+  <div class="slide-counter">14 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -2180,7 +2257,39 @@ body::after {
   </div>
 
   <div class="final-line reveal">All findings documented. CP professional accountability is preserved throughout — at POC stage and beyond.</div>
-  <div class="slide-counter">15 / 15</div>
+  <div class="slide-counter">15 / 16</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16: THANK YOU -->
+<!-- ============================================================ -->
+<section class="slide" id="slide-16">
+  <div class="reveal">
+    <div class="mono-label" style="margin-bottom:0.25rem;">Closing</div>
+    <div class="slide-title">Thank You <span>for Your Time and Collaboration</span></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="thankyou-grid">
+    <div class="thankyou-card reveal">
+      <div class="thankyou-label">Collaboration</div>
+      <div class="thankyou-text">Built in collaboration with <strong>DSAI Group 5</strong> and <strong>Operva AI</strong>.</div>
+      <div class="operva-logo-wrap">
+        <img class="operva-logo" src="./operva_ai_logo_white_transparent.png" alt="Operva AI logo">
+      </div>
+    </div>
+
+    <div class="thankyou-card reveal">
+      <div class="thankyou-label">Connect</div>
+      <div class="thankyou-text">Email us at <a class="contact-link" href="mailto:hello@operva.ai">hello@operva.ai</a></div>
+      <div class="thankyou-text">Connect with me on LinkedIn</div>
+      <div class="qr-box">
+        <img src="./linkedin_qr.png" alt="LinkedIn QR code">
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-counter">16 / 16</div>
 </section>
 
 <!-- ============================================================ -->
@@ -2190,7 +2299,7 @@ body::after {
 (function() {
   'use strict';
 
-  const TOTAL_SLIDES = 15;
+  const TOTAL_SLIDES = 16;
 
   class SlidePresentation {
     constructor() {
